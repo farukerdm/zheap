@@ -30,6 +30,8 @@
 #include "postmaster/bgwriter.h"
 #include "postmaster/checkpointer.h"
 #include "postmaster/postmaster.h"
+#include "postmaster/undoloop.h"
+#include "postmaster/undoworker.h"
 #include "replication/logicallauncher.h"
 #include "replication/slot.h"
 #include "replication/walreceiver.h"
@@ -151,6 +153,8 @@ CreateSharedMemoryAndSemaphores(bool makePrivate, int port)
 		size = add_size(size, BTreeShmemSize());
 		size = add_size(size, SyncScanShmemSize());
 		size = add_size(size, AsyncShmemSize());
+		size = add_size(size, RollbackHTSize());
+		size = add_size(size, UndoLauncherShmemSize());
 #ifdef EXEC_BACKEND
 		size = add_size(size, ShmemBackendArraySize());
 #endif
@@ -225,6 +229,7 @@ CreateSharedMemoryAndSemaphores(bool makePrivate, int port)
 	SUBTRANSShmemInit();
 	MultiXactShmemInit();
 	InitBufferPool();
+	InitRollbackHashTable();
 
 	/*
 	 * Set up lock manager
@@ -263,6 +268,7 @@ CreateSharedMemoryAndSemaphores(bool makePrivate, int port)
 	WalSndShmemInit();
 	WalRcvShmemInit();
 	ApplyLauncherShmemInit();
+	UndoLauncherShmemInit();
 
 	/*
 	 * Set up other modules that need some shared memory space
